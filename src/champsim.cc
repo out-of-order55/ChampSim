@@ -70,7 +70,7 @@ phase_stats do_phase(const phase_info& phase, environment& env, std::vector<trac
     op.warmup = is_warmup;
     op.begin_phase();
   }
-
+  
   const auto time_quantum = std::accumulate(std::cbegin(operables), std::cend(operables), champsim::chrono::clock::duration::max(),
                                             [](const auto acc, const operable& y) { return std::min(acc, y.clock_period); });
 
@@ -84,12 +84,12 @@ phase_stats do_phase(const phase_info& phase, environment& env, std::vector<trac
   // Perform phase
   int stalled_cycle{0};
   std::vector<bool> phase_complete(std::size(env.cpu_view()), false);
+  
   while (!std::accumulate(std::begin(phase_complete), std::end(phase_complete), true, std::logical_and{})) {
     auto next_phase_complete = phase_complete;
     global_clock.tick(time_quantum);
 
     auto progress = do_cycle(env, traces, trace_index, global_clock);
-
     if (progress == 0) {
       ++stalled_cycle;
     } else {
@@ -183,6 +183,7 @@ phase_stats do_phase(const phase_info& phase, environment& env, std::vector<trac
 // simulation entry point
 std::vector<phase_stats> main(environment& env, std::vector<phase_info>& phases, std::vector<tracereader>& traces)
 {
+  printf("start sim\n");
   for (champsim::operable& op : env.operable_view()) {
     op.initialize();
   }

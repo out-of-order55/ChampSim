@@ -47,6 +47,8 @@ std::vector<std::string> champsim::plain_printer::format(O3_CPU::stats_type stat
   auto total_mispredictions = std::ceil(
       std::accumulate(std::begin(types), std::end(types), 0LL, [btm = stats.branch_type_misses](auto acc, auto next) { return acc + btm.value_or(next, 0); }));
 
+  auto total_btb_miss_type = std::ceil(
+      std::accumulate(std::begin(types), std::end(types), 0LL, [btm = stats.total_btb_type_miss](auto acc, auto next) { return acc + btm.value_or(next, 0); }));
   std::vector<std::string> lines{};
   lines.push_back(fmt::format("{} cumulative IPC: {} instructions: {} cycles: {}", stats.name, ::print_ratio(stats.instrs(), stats.cycles()), stats.instrs(),
                               stats.cycles()));
@@ -56,7 +58,15 @@ std::vector<std::string> champsim::plain_printer::format(O3_CPU::stats_type stat
                               ::print_ratio(std::kilo::num * total_mispredictions, stats.instrs()),
                               ::print_ratio(stats.total_rob_occupancy_at_branch_mispredict, total_mispredictions)));
 
-  lines.emplace_back("Branch type MPKI");
+    lines.push_back(fmt::format("{} Total BTB Miss: {}", stats.name,
+                              ::print_ratio(stats.total_btb_miss,1)));
+
+  lines.emplace_back("BTB Miss type MPKI");
+  for (auto idx : types) {
+    lines.push_back(fmt::format("{}: {}", branch_type_names.at(champsim::to_underlying(idx)),
+                                ::print_ratio(std::kilo::num * stats.total_btb_type_miss.value_or(idx, 0), stats.instrs())));
+  }
+  lines.emplace_back("\nBranch type MPKI");
   for (auto idx : types) {
     lines.push_back(fmt::format("{}: {}", branch_type_names.at(champsim::to_underlying(idx)),
                                 ::print_ratio(std::kilo::num * stats.branch_type_misses.value_or(idx, 0), stats.instrs())));

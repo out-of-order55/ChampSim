@@ -9,23 +9,26 @@
 #include "basic_btb.h"
 
 #include "instruction.h"
-
-std::pair<champsim::address, bool> basic_btb::btb_prediction(champsim::address ip)
+// #include "ooo_cpu.h"
+std::tuple<champsim::address, bool,bool> basic_btb::btb_prediction(champsim::address ip)
 {
   // use BTB for all other branches + direct calls
   auto btb_entry = direct.check_hit(ip);
 
+
   // no prediction for this IP
   if (!btb_entry.has_value())
-    return {champsim::address{}, false};
+    return {champsim::address{}, false,false};
 
-  if (btb_entry->type == direct_predictor::branch_info::RETURN)
-    return ras.prediction();
-
-  if (btb_entry->type == direct_predictor::branch_info::INDIRECT)
-    return indirect.prediction(ip);
-
-  return {btb_entry->target, btb_entry->type != direct_predictor::branch_info::CONDITIONAL};
+  if (btb_entry->type == direct_predictor::branch_info::RETURN){
+    auto [tgt, ok] = ras.prediction();
+    return {tgt, ok, true};
+  }
+  if (btb_entry->type == direct_predictor::branch_info::INDIRECT){
+    auto [tgt, ok] = indirect.prediction(ip);
+    return {tgt, ok, true};
+  }
+    return {btb_entry->target, btb_entry->type != direct_predictor::branch_info::CONDITIONAL,true};
 }
 
 void basic_btb::update_btb(champsim::address ip, champsim::address branch_target, bool taken, uint8_t branch_type)

@@ -200,7 +200,7 @@ public:
 
     virtual void impl_initialize_btb() = 0;
     virtual void impl_update_btb(champsim::address ip, champsim::address predicted_target, bool taken, uint8_t branch_type) = 0;
-    virtual std::pair<champsim::address, bool> impl_btb_prediction(champsim::address ip, uint8_t branch_type) = 0;
+    virtual std::tuple<champsim::address, bool,bool> impl_btb_prediction(champsim::address ip, uint8_t branch_type) = 0;
   };
 
   template <typename... Bs>
@@ -220,7 +220,7 @@ public:
 
     void impl_initialize_btb() final;
     void impl_update_btb(champsim::address ip, champsim::address predicted_target, bool taken, uint8_t branch_type) final;
-    [[nodiscard]] std::pair<champsim::address, bool> impl_btb_prediction(champsim::address ip, uint8_t branch_type) final;
+    [[nodiscard]] std::tuple<champsim::address, bool,bool> impl_btb_prediction(champsim::address ip, uint8_t branch_type) final;
   };
 
   std::unique_ptr<branch_module_concept> branch_module_pimpl;
@@ -233,7 +233,7 @@ public:
 
   void impl_initialize_btb() const;
   void impl_update_btb(champsim::address ip, champsim::address predicted_target, bool taken, uint8_t branch_type) const;
-  [[nodiscard]] std::pair<champsim::address, bool> impl_btb_prediction(champsim::address ip, uint8_t branch_type) const;
+  [[nodiscard]] std::tuple<champsim::address, bool,bool> impl_btb_prediction(champsim::address ip, uint8_t branch_type) const;
   // NOLINTEND(readability-make-member-function-const)
 
   template <typename... Bs, typename... Ts>
@@ -338,9 +338,9 @@ void O3_CPU::btb_module_model<Ts...>::impl_update_btb(champsim::address ip, cham
 }
 
 template <typename... Ts>
-std::pair<champsim::address, bool> O3_CPU::btb_module_model<Ts...>::impl_btb_prediction(champsim::address ip, uint8_t branch_type)
+std::tuple<champsim::address, bool,bool> O3_CPU::btb_module_model<Ts...>::impl_btb_prediction(champsim::address ip, uint8_t branch_type)
 {
-  using return_type = std::pair<champsim::address, bool>;
+  using return_type = std::tuple<champsim::address, bool,bool>;
   [[maybe_unused]] auto process_one = [&](auto& t) {
     using namespace champsim::modules;
 

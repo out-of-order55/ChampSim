@@ -153,12 +153,16 @@ bool O3_CPU::do_predict_branch(ooo_model_instr& arch_instr)
 
   // handle branch prediction for all instructions as at this point we do not know if the instruction is a branch
   sim_stats.total_branch_types.increment(arch_instr.branch);
-  auto [predicted_branch_target, always_taken] = impl_btb_prediction(arch_instr.ip, arch_instr.branch);
+  auto [predicted_branch_target, always_taken,btb_hit] = impl_btb_prediction(arch_instr.ip, arch_instr.branch);
   arch_instr.branch_prediction = impl_predict_branch(arch_instr.ip, predicted_branch_target, always_taken, arch_instr.branch) || always_taken;
-  if (!arch_instr.branch_prediction) {
+  if (!arch_instr.branch_prediction ) {
     predicted_branch_target = champsim::address{};
   }
-
+  //BTB MISS 但条件分支为hit
+  if(!btb_hit && arch_instr.is_branch && arch_instr.branch_taken){
+    sim_stats.total_btb_miss++;
+    sim_stats.total_btb_type_miss.increment(arch_instr.branch);
+  }
   if (arch_instr.is_branch) {
     if constexpr (champsim::debug_print) {
       fmt::print("[BRANCH] instr_id: {} ip: {} taken: {}\n", arch_instr.instr_id, arch_instr.ip, arch_instr.branch_taken);
@@ -749,7 +753,7 @@ void O3_CPU::impl_update_btb(champsim::address ip, champsim::address predicted_t
   btb_module_pimpl->impl_update_btb(ip, predicted_target, taken, branch_type);
 }
 
-std::pair<champsim::address, bool> O3_CPU::impl_btb_prediction(champsim::address ip, uint8_t branch_type) const
+std::tuple<champsim::address, bool,bool> O3_CPU::impl_btb_prediction(champsim::address ip, uint8_t branch_type) const
 {
   return btb_module_pimpl->impl_btb_prediction(ip, branch_type);
 }
